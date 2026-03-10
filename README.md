@@ -1,4 +1,7 @@
 ## Cryptoinfo Advanced — Cryptocurrency Home Assistant Integration
+This is a Fork from https://github.com/TheHolyRoger/hass-cryptoinfo, original is from https://github.com/heyajohnny/cryptoinfo
+
+[![HA Version](https://img.shields.io/badge/HA%20Minimum-2024.1.0-blue)](https://www.home-assistant.io)
 [![hacs_badge](https://img.shields.io/badge/HACS-Default-orange.svg)](https://github.com/hacs/integration)
 
 ### An all-in-one data center for Crypto and Blockchain enthusiasts.
@@ -6,18 +9,15 @@ Powered by trustworthy APIs from **CoinGecko**, **CryptoID**, and **Mempool.spac
 
 Add comprehensive cryptocurrency prices, blockchain statistics, mining pool hashrates, and real-time Mempool data directly into your Home Assistant dashboards. Create powerful automations based on market movements or network congestion!
 
-If you like this project, please consider supporting the development:
+---
 
-<a href="https://www.buymeacoffee.com/TheHoliestRoger" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me an Aubergine" style="height: 60px !important;width: 217px !important;"></a>
+## Support me ☕
 
-<details>
-  <summary>BTC donation address</summary>
-  bc1qpq4djuxgxsk0zrkg9y2rye8fyz7e0mjx64gzq0
-</details>
+Wenn dir diese Integration gefällt und du meine Arbeit unterstützen möchtest, freue ich mich über eine kleine Spende. Das hilft mir, die Hardware-Kosten zu decken und Zeit für die Weiterentwicklung zu finden. Vielen Dank für deine Unterstützung! ❤️
 
-*Originally started from [Cryptoinfo](https://github.com/heyajohnny/cryptoinfo), now significantly extended and completely rewritten with advanced features.*
-
-**Minimum Home Assistant version: 2024.1.0**
+<a href="https://www.paypal.com/donate/?hosted_button_id=GBCCKFTK5FVX4">
+  <img src="https://github.com/duczz/ha-cryptoinfo-advanced/blob/master/paypal_donation_logo.png?raw=true" width="230" alt="Donate with PayPal">
+</a>
 
 ---
 
@@ -396,9 +396,3 @@ Make sure you are using the correct `cryptocurrency_name` and `currency_name`.
 Make sure you typed `bitcoin` or `btc` in the Cryptocurrency field. Mempool sensors only work for the Bitcoin network.
 
 ---
-
-## 💡 Issues, Ideas & Feature Requests
-
-Encountered a bug? Have an idea for a cool new API source?
-Please open an issue on the GitHub repository:
-[https://github.com/TheHolyRoger/hass-cryptoinfo/issues](https://github.com/TheHolyRoger/hass-cryptoinfo/issues)
