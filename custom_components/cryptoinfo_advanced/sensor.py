@@ -28,6 +28,7 @@ from .const.const import (
     CONF_DIFFICULTY_WINDOW,
     CONF_HALVING_WINDOW,
     CONF_MAX_FETCH_FAILURES,
+    CONF_API_KEY,
 )
 
 from .manager import CryptoInfoAdvEntityManager, CryptoInfoAdvDataFetchType
@@ -72,6 +73,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     difficulty_window = config.get(CONF_DIFFICULTY_WINDOW)
     halving_window = config.get(CONF_HALVING_WINDOW)
     max_fetch_failures = config.get(CONF_MAX_FETCH_FAILURES)
+    api_key = config.get(CONF_API_KEY, "")
 
     entities = []
 
@@ -97,6 +99,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
             difficulty_window,
             halving_window,
             max_fetch_failures,
+            api_key,
         )
         if new_sensor.check_valid_config(False):
             entities.append(new_sensor)
@@ -149,5 +152,6 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
         vol.Optional(CONF_BLOCK_TIME_MINUTES, default=""): cv.string,
         vol.Optional(CONF_DIFFICULTY_WINDOW, default=""): cv.string,
         vol.Optional(CONF_HALVING_WINDOW, default=""): cv.string,
+        vol.Optional(CONF_API_KEY, default=""): cv.string,
     }
 )

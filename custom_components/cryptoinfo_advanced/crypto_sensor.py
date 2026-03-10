@@ -6,7 +6,6 @@ Author: TheHoliestRoger
 
 import aiohttp
 import asyncio
-import async_timeout
 import json
 import time
 import traceback
@@ -123,6 +122,7 @@ from homeassistant.exceptions import TemplateError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.template import Template
 from homeassistant.util import Throttle
+from homeassistant.util import dt as dt_util
 
 
 class CryptoinfoAdvSensor(SensorEntity):
@@ -138,7 +138,7 @@ class CryptoinfoAdvSensor(SensorEntity):
         unique_id=None,
         state_class=None,
         api_mode="",
-        pool_prefix=[""],
+        pool_prefix=None,
         fetch_args="",
         extra_sensors="",
         api_domain_name="",
@@ -148,6 +148,7 @@ class CryptoinfoAdvSensor(SensorEntity):
         difficulty_window="",
         halving_window="",
         max_fetch_failures=None,
+        api_key="",
         is_child_sensor=False,
     ):
         # Internal Properties
@@ -156,7 +157,7 @@ class CryptoinfoAdvSensor(SensorEntity):
         self.data = None
         self.cryptocurrency_name = cryptocurrency_name
         self.currency_name = currency_name
-        self.pool_prefixes = pool_prefix if isinstance(pool_prefix, list) else [pool_prefix]
+        self.pool_prefixes = pool_prefix if isinstance(pool_prefix, list) else ([""] if pool_prefix is None else [pool_prefix])
         self.multiplier = multiplier
         self._diff_multiplier = int(diff_multiplier) if diff_multiplier.isdigit() else DEFAULT_CHAIN_DIFF_MULTIPLIER
         self._block_time_minutes = float(block_time_minutes) if block_time_minutes.replace(
@@ -174,6 +175,7 @@ class CryptoinfoAdvSensor(SensorEntity):
         self._child_sensors = list()
         self._child_sensor_config = extra_sensors
         self._fetch_failure_count = 0
+        self._api_key = api_key
 
         # HASS Attributes
         self.async_update = Throttle(update_frequency)(self._async_update)
@@ -183,7 +185,7 @@ class CryptoinfoAdvSensor(SensorEntity):
         self._last_update = None
         self._icon = "mdi:bitcoin"
         self._attr_device_class = self._build_device_class()
-        self._attr_state_class = state_class or SensorStateClass.MEASUREMENT
+        self._attr_state_class = self._build_state_class(state_class)
         self._attr_available = True
         self._unit_of_measurement = unit_of_measurement
 
@@ -285,6 +287,8 @@ class CryptoinfoAdvSensor(SensorEntity):
             return None
 
         best_hashrate = CryptoInfoAdvEntityManager.instance().get_best_hashrate(self.cryptocurrency_name)
+        if not best_hashrate:
+            return None
         return (self._difficulty * self._diff_multiplier) / best_hashrate
 
     @property
@@ -306,7 +310,7 @@ class CryptoinfoAdvSensor(SensorEntity):
         if self.difficulty_retarget_height is None:
             return None
 
-        return int(self.difficulty_retarget_height - 2016)
+        return int(self.difficulty_retarget_height - self._difficulty_window)
 
     @property
     def difficulty_retarget_seconds(self):
@@ -672,12 +676,12 @@ class CryptoinfoAdvSensor(SensorEntity):
             else:
                 id_slug = f"{self._fetch_type.id_slug}"
             return "{0}{1}{2}_{3}".format(
-                self.cryptocurrency_name, self.multiplier, self._update_frequency.seconds, id_slug,
+                self.cryptocurrency_name, self.multiplier, int(self._update_frequency.total_seconds()), id_slug,
             )
 
         else:
             return "{0}{1}{2}{3}".format(
-                self.cryptocurrency_name, self.currency_name, self.multiplier, self._update_frequency.seconds
+                self.cryptocurrency_name, self.currency_name, self.multiplier, int(self._update_frequency.total_seconds())
             )
 
     def _build_device_class(self):
@@ -689,6 +693,16 @@ class CryptoinfoAdvSensor(SensorEntity):
 
         else:
             return None
+
+    def _build_state_class(self, state_class):
+        if state_class:
+            return state_class
+        if self._fetch_type in (
+            CryptoInfoAdvDataFetchType.CHAIN_SUMMARY,
+            CryptoInfoAdvDataFetchType.CHAIN_BLOCK_TIME,
+        ):
+            return SensorStateClass.TOTAL_INCREASING
+        return SensorStateClass.MEASUREMENT
 
     def check_valid_config(self, raise_error=True):
         if self._fetch_type == CryptoInfoAdvDataFetchType.NOMP_POOL_STATS:
@@ -731,8 +745,11 @@ class CryptoinfoAdvSensor(SensorEntity):
     async def _async_api_fetch(self, api_data, url, extract_data, extract_primary, encoding="utf-8"):
         try:
             if api_data is None:
-                async with async_timeout.timeout(30):
-                    response = await self._session.get(url)
+                async with asyncio.timeout(30):
+                    headers = {}
+                    if self._api_key and API_BASE_URL_COINGECKO in url:
+                        headers["x-cg-demo-api-key"] = self._api_key
+                    response = await self._session.get(url, headers=headers)
                     if response.status == 200:
                         resp_text = await response.text(encoding=encoding)
                         api_data = extract_data(json.loads(resp_text))
@@ -885,13 +902,13 @@ class CryptoinfoAdvSensor(SensorEntity):
                 change_7d=api_data["price_change_percentage_7d_in_currency"],
                 change_30d=api_data["price_change_percentage_30d_in_currency"],
                 market_cap=api_data["market_cap"],
-                circulating_supply=api_data["circulating_supply"],
-                total_supply=api_data["total_supply"],
-                all_time_high=api_data["ath"],
-                all_time_low=api_data["atl"],
-                low_24h=api_data["low_24h"],
-                high_24h=api_data["high_24h"],
-                image_url=api_data["image"],
+                circulating_supply=api_data.get("circulating_supply"),
+                total_supply=api_data.get("total_supply"),
+                all_time_high=api_data.get("ath"),
+                all_time_low=api_data.get("atl"),
+                low_24h=api_data.get("low_24h"),
+                high_24h=api_data.get("high_24h"),
+                image_url=api_data.get("image"),
                 ath_date=api_data.get("ath_date"),
                 atl_date=api_data.get("atl_date"),
             )
@@ -1260,7 +1277,7 @@ class CryptoinfoAdvSensor(SensorEntity):
         if available:
             self._fetch_failure_count = 0
         self._state = state
-        self._last_update = datetime.today().strftime("%d-%m-%Y %H:%M")
+        self._last_update = dt_util.utcnow()
         self._base_price = base_price
         self._24h_volume = volume_24h
         self._1h_change = change_1h
@@ -1401,9 +1418,13 @@ class CryptoinfoAdvSensor(SensorEntity):
                 api_data = await self._fetch_price_data_main(api_data)
 
         except ValueError:
-            try:
-                api_data = await self._fetch_price_data_alternate(api_data)
-            except ValueError:
+            if self._fetch_type in CryptoInfoAdvEntityManager.instance().fetch_price_types:
+                try:
+                    api_data = await self._fetch_price_data_alternate(api_data)
+                except ValueError:
+                    self._process_failed_fetch()
+                    return
+            else:
                 self._process_failed_fetch()
                 return
 

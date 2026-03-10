@@ -22,6 +22,7 @@ CONF_BLOCK_TIME_MINUTES = "block_time_minutes"
 CONF_DIFFICULTY_WINDOW = "difficulty_window"
 CONF_HALVING_WINDOW = "halving_window"
 CONF_MAX_FETCH_FAILURES = "max_fetch_failures"
+CONF_API_KEY = "api_key"
 
 SENSOR_PREFIX = "Cryptoinfo "
 ATTR_LAST_UPDATE = "last_update"
