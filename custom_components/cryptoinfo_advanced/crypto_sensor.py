@@ -6,11 +6,8 @@ Author: TheHoliestRoger
 
 import aiohttp
 import asyncio
-import json
-import time
 import traceback
 from datetime import datetime, timedelta, timezone
-from dateutil import parser as dtparser
 
 from .const.const import (
     _LOGGER,
@@ -121,11 +118,18 @@ from homeassistant.const import (
 from homeassistant.exceptions import TemplateError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.template import Template
-from homeassistant.util import Throttle
 from homeassistant.util import dt as dt_util
+
+from .coordinator import CryptoinfoAdvCoordinator
+
+
+_UNSET = object()
 
 
 class CryptoinfoAdvSensor(SensorEntity):
+
+    should_poll = False
+
     def __init__(
         self,
         hass,
@@ -178,7 +182,7 @@ class CryptoinfoAdvSensor(SensorEntity):
         self._api_key = api_key
 
         # HASS Attributes
-        self.async_update = Throttle(update_frequency)(self._async_update)
+        self._coordinator = None
         self._attr_unique_id = unique_id if unique_id is not None and len(unique_id) else self._build_unique_id()
         self._name = self._build_name()
         self._state = None
@@ -329,7 +333,7 @@ class CryptoinfoAdvSensor(SensorEntity):
             return None
 
         time_window_expected = (self._block_time_minutes * 60) * self._difficulty_window
-        time_next_diff = int(int(time.time()) + self.difficulty_retarget_seconds)
+        time_next_diff = int(int(dt_util.utcnow().timestamp()) + self.difficulty_retarget_seconds)
         time_window_current_diff = time_next_diff - last_diff_timestamp
         actual_percent_change = (((time_window_expected - time_window_current_diff) / time_window_current_diff) * 100)
         calc_percent_change = max([
@@ -630,13 +634,42 @@ class CryptoinfoAdvSensor(SensorEntity):
     def all_extra_sensor_keys(self):
         return self.get_extra_sensor_attrs(full_attr_force=True).keys()
 
+    _VALID_EXTRA_SENSOR_KEYS = [
+        ATTR_LAST_UPDATE,
+        ATTR_BASE_PRICE, ATTR_24H_VOLUME, ATTR_24H_CHANGE,
+        ATTR_1H_CHANGE, ATTR_7D_CHANGE, ATTR_30D_CHANGE,
+        ATTR_CIRCULATING_SUPPLY, ATTR_TOTAL_SUPPLY,
+        ATTR_ALL_TIME_HIGH, ATTR_ALL_TIME_LOW,
+        ATTR_24H_LOW, ATTR_24H_HIGH, ATTR_IMAGE_URL,
+        ATTR_ALL_TIME_HIGH_DATE, ATTR_ALL_TIME_LOW_DATE,
+        ATTR_MARKET_CAP, ATTR_BLOCK_HEIGHT,
+        ATTR_DIFFICULTY, ATTR_HASHRATE,
+        CONF_DIFF_MULTIPLIER, CONF_BLOCK_TIME_MINUTES, CONF_DIFFICULTY_WINDOW, CONF_HALVING_WINDOW,
+        ATTR_POOL_CONTROL_1000B,
+        ATTR_WORKER_COUNT, ATTR_LAST_BLOCK,
+        ATTR_BLOCKS_PENDING, ATTR_BLOCKS_CONFIRMED, ATTR_BLOCKS_ORPHANED,
+        ATTR_MEMPOOL_TX_COUNT, ATTR_MEMPOOL_TOTAL_FEE,
+        ATTR_MEMPOOL_FEES_FASTEST, ATTR_MEMPOOL_FEES_30MIN, ATTR_MEMPOOL_FEES_60MIN,
+        ATTR_MEMPOOL_FEES_ECO, ATTR_MEMPOOL_FEES_MINIMUM,
+        ATTR_MEMPOOL_NEXT_BLOCK_SIZE, ATTR_MEMPOOL_NEXT_BLOCK_TX_COUNT,
+        ATTR_MEMPOOL_NEXT_BLOCK_TOTAL_FEE, ATTR_MEMPOOL_NEXT_BLOCK_MEDIAN_FEE,
+        ATTR_MEMPOOL_NEXT_BLOCK_FEE_RANGE_MIN, ATTR_MEMPOOL_NEXT_BLOCK_FEE_RANGE_MAX,
+        ATTR_BLOCK_TIME_IN_SECONDS, ATTR_DIFFICULTY_BLOCK_PROGRESS,
+        ATTR_DIFFICULTY_RETARGET_HEIGHT, ATTR_DIFFICULTY_RETARGET_SECONDS,
+        ATTR_DIFFICULTY_RETARGET_PERCENT_CHANGE, ATTR_DIFFICULTY_RETARGET_ESTIMATED_DIFF,
+        ATTR_DIFFICULTY_CALC, ATTR_HALVING_BLOCK_PROGRESS,
+        ATTR_HALVING_BLOCKS_REMAINING, ATTR_NEXT_HALVING_HEIGHT, ATTR_TOTAL_HALVINGS_TO_DATE,
+        ATTR_HASHRATE_CALC,
+        ATTR_MEMPOOL_SIZE_CALC, ATTR_MEMPOOL_TOTAL_FEE_CALC, ATTR_MEMPOOL_AVERAGE_FEE_PER_TX,
+        ATTR_MEMPOOL_NEXT_BLOCK_SIZE_CALC, ATTR_MEMPOOL_NEXT_BLOCK_TOTAL_FEE_CALC,
+        ATTR_MEMPOOL_NEXT_BLOCK_FEE_RANGE_COMBINED,
+        ATTR_ALL_TIME_HIGH_DISTANCE, ATTR_ALL_TIME_HIGH_DAYS, ATTR_ALL_TIME_LOW_DAYS,
+        ATTR_POOL_CONTROL_1000B_PERC,
+    ]
+
     @classmethod
     def get_valid_extra_sensor_keys(cls):
-        empty_sensor = CryptoinfoAdvSensor(None, *["" for x in range(6)])
-        keys = list(empty_sensor.all_extra_sensor_keys)
-        del empty_sensor
-
-        return keys
+        return cls._VALID_EXTRA_SENSOR_KEYS
 
     @property
     def extra_sensor_attributes(self):
@@ -751,8 +784,14 @@ class CryptoinfoAdvSensor(SensorEntity):
                         headers["x-cg-demo-api-key"] = self._api_key
                     response = await self._session.get(url, headers=headers)
                     if response.status == 200:
-                        resp_text = await response.text(encoding=encoding)
-                        api_data = extract_data(json.loads(resp_text))
+                        api_data = extract_data(await response.json(encoding=encoding, content_type=None))
+                    else:
+                        _LOGGER.warning(
+                            "HTTP %s fetching update for %s (url: %s)",
+                            response.status, self.name, url,
+                        )
+            if api_data is None:
+                raise ValueError("No data received from API")
             primary_data = extract_primary(api_data)
             self.data = api_data
         except asyncio.TimeoutError:
@@ -762,6 +801,9 @@ class CryptoinfoAdvSensor(SensorEntity):
             _LOGGER.error(
                 "Error fetching update for %s: %r", self.name, err
             )
+            primary_data, api_data = None, None
+        except ValueError as err:
+            _LOGGER.warning("Failed fetching update for %s: %s", self.name, err)
             primary_data, api_data = None, None
         except Exception as error:
             tb = traceback.format_exc()
@@ -1233,98 +1275,129 @@ class CryptoinfoAdvSensor(SensorEntity):
 
     def _update_all_properties(
         self,
-        state=None,
-        base_price=None,
-        volume_24h=None,
-        change_1h=None,
-        change_24h=None,
-        change_7d=None,
-        change_30d=None,
-        market_cap=None,
-        circulating_supply=None,
-        total_supply=None,
-        all_time_high=None,
-        all_time_low=None,
-        low_24h=None,
-        high_24h=None,
-        image_url=None,
-        ath_date=None,
-        atl_date=None,
-        difficulty=None,
-        hashrate=None,
-        pool_control_1000b=None,
-        block_height=None,
-        worker_count=None,
-        last_block=None,
-        blocks_pending=None,
-        blocks_confirmed=None,
-        blocks_orphaned=None,
-        mempool_tx_count=None,
-        mempool_total_fee=None,
-        mempool_fees_fastest=None,
-        mempool_fees_30min=None,
-        mempool_fees_60min=None,
-        mempool_fees_eco=None,
-        mempool_fees_minimum=None,
-        mempool_next_block_size=None,
-        mempool_next_block_tx_count=None,
-        mempool_next_block_total_fee=None,
-        mempool_next_block_median_fee=None,
-        mempool_next_block_fee_range_min=None,
-        mempool_next_block_fee_range_max=None,
+        state=_UNSET,
+        base_price=_UNSET,
+        volume_24h=_UNSET,
+        change_1h=_UNSET,
+        change_24h=_UNSET,
+        change_7d=_UNSET,
+        change_30d=_UNSET,
+        market_cap=_UNSET,
+        circulating_supply=_UNSET,
+        total_supply=_UNSET,
+        all_time_high=_UNSET,
+        all_time_low=_UNSET,
+        low_24h=_UNSET,
+        high_24h=_UNSET,
+        image_url=_UNSET,
+        ath_date=_UNSET,
+        atl_date=_UNSET,
+        difficulty=_UNSET,
+        hashrate=_UNSET,
+        pool_control_1000b=_UNSET,
+        block_height=_UNSET,
+        worker_count=_UNSET,
+        last_block=_UNSET,
+        blocks_pending=_UNSET,
+        blocks_confirmed=_UNSET,
+        blocks_orphaned=_UNSET,
+        mempool_tx_count=_UNSET,
+        mempool_total_fee=_UNSET,
+        mempool_fees_fastest=_UNSET,
+        mempool_fees_30min=_UNSET,
+        mempool_fees_60min=_UNSET,
+        mempool_fees_eco=_UNSET,
+        mempool_fees_minimum=_UNSET,
+        mempool_next_block_size=_UNSET,
+        mempool_next_block_tx_count=_UNSET,
+        mempool_next_block_total_fee=_UNSET,
+        mempool_next_block_median_fee=_UNSET,
+        mempool_next_block_fee_range_min=_UNSET,
+        mempool_next_block_fee_range_max=_UNSET,
         available=True,
     ):
         if available:
             self._fetch_failure_count = 0
-        self._state = state
         self._last_update = dt_util.utcnow()
-        self._base_price = base_price
-        self._24h_volume = volume_24h
-        self._1h_change = change_1h
-        self._24h_change = change_24h
-        self._7d_change = change_7d
-        self._30d_change = change_30d
-        self._market_cap = market_cap
-        self._circulating_supply = circulating_supply
-        self._total_supply = total_supply
-        self._all_time_high = all_time_high
-        self._all_time_low = all_time_low
-        self._24h_low = low_24h
-        self._24h_high = high_24h
-        self._image_url = image_url
-        self._difficulty = difficulty
-        self._hashrate = hashrate
-        self._pool_control_1000b = pool_control_1000b
-        self._block_height = block_height
-        self._worker_count = worker_count
-        self._last_block = last_block
-        self._blocks_pending = blocks_pending
-        self._blocks_confirmed = blocks_confirmed
-        self._blocks_orphaned = blocks_orphaned
-        self._mempool_tx_count = mempool_tx_count
-        self._mempool_total_fee = mempool_total_fee
-        self._mempool_fees_fastest = mempool_fees_fastest
-        self._mempool_fees_30min = mempool_fees_30min
-        self._mempool_fees_60min = mempool_fees_60min
-        self._mempool_fees_eco = mempool_fees_eco
-        self._mempool_fees_minimum = mempool_fees_minimum
-        self._mempool_next_block_size = mempool_next_block_size
-        self._mempool_next_block_tx_count = mempool_next_block_tx_count
-        self._mempool_next_block_total_fee = mempool_next_block_total_fee
-        self._mempool_next_block_median_fee = mempool_next_block_median_fee
-        self._mempool_next_block_fee_range_min = mempool_next_block_fee_range_min
-        self._mempool_next_block_fee_range_max = mempool_next_block_fee_range_max
         self._attr_available = available
-        if ath_date and len(ath_date) > 0:
-            try:
-                self._ath_date = dtparser.parse(ath_date)
-            except Exception:
-                self._ath_date = None
-        if atl_date and len(atl_date) > 0:
-            try:
-                self._atl_date = dtparser.parse(atl_date)
-            except Exception:
-                self._atl_date = None
+        if state is not _UNSET:
+            self._state = state
+        if base_price is not _UNSET:
+            self._base_price = base_price
+        if volume_24h is not _UNSET:
+            self._24h_volume = volume_24h
+        if change_1h is not _UNSET:
+            self._1h_change = change_1h
+        if change_24h is not _UNSET:
+            self._24h_change = change_24h
+        if change_7d is not _UNSET:
+            self._7d_change = change_7d
+        if change_30d is not _UNSET:
+            self._30d_change = change_30d
+        if market_cap is not _UNSET:
+            self._market_cap = market_cap
+        if circulating_supply is not _UNSET:
+            self._circulating_supply = circulating_supply
+        if total_supply is not _UNSET:
+            self._total_supply = total_supply
+        if all_time_high is not _UNSET:
+            self._all_time_high = all_time_high
+        if all_time_low is not _UNSET:
+            self._all_time_low = all_time_low
+        if low_24h is not _UNSET:
+            self._24h_low = low_24h
+        if high_24h is not _UNSET:
+            self._24h_high = high_24h
+        if image_url is not _UNSET:
+            self._image_url = image_url
+        if difficulty is not _UNSET:
+            self._difficulty = difficulty
+        if hashrate is not _UNSET:
+            self._hashrate = hashrate
+        if pool_control_1000b is not _UNSET:
+            self._pool_control_1000b = pool_control_1000b
+        if block_height is not _UNSET:
+            self._block_height = block_height
+        if worker_count is not _UNSET:
+            self._worker_count = worker_count
+        if last_block is not _UNSET:
+            self._last_block = last_block
+        if blocks_pending is not _UNSET:
+            self._blocks_pending = blocks_pending
+        if blocks_confirmed is not _UNSET:
+            self._blocks_confirmed = blocks_confirmed
+        if blocks_orphaned is not _UNSET:
+            self._blocks_orphaned = blocks_orphaned
+        if mempool_tx_count is not _UNSET:
+            self._mempool_tx_count = mempool_tx_count
+        if mempool_total_fee is not _UNSET:
+            self._mempool_total_fee = mempool_total_fee
+        if mempool_fees_fastest is not _UNSET:
+            self._mempool_fees_fastest = mempool_fees_fastest
+        if mempool_fees_30min is not _UNSET:
+            self._mempool_fees_30min = mempool_fees_30min
+        if mempool_fees_60min is not _UNSET:
+            self._mempool_fees_60min = mempool_fees_60min
+        if mempool_fees_eco is not _UNSET:
+            self._mempool_fees_eco = mempool_fees_eco
+        if mempool_fees_minimum is not _UNSET:
+            self._mempool_fees_minimum = mempool_fees_minimum
+        if mempool_next_block_size is not _UNSET:
+            self._mempool_next_block_size = mempool_next_block_size
+        if mempool_next_block_tx_count is not _UNSET:
+            self._mempool_next_block_tx_count = mempool_next_block_tx_count
+        if mempool_next_block_total_fee is not _UNSET:
+            self._mempool_next_block_total_fee = mempool_next_block_total_fee
+        if mempool_next_block_median_fee is not _UNSET:
+            self._mempool_next_block_median_fee = mempool_next_block_median_fee
+        if mempool_next_block_fee_range_min is not _UNSET:
+            self._mempool_next_block_fee_range_min = mempool_next_block_fee_range_min
+        if mempool_next_block_fee_range_max is not _UNSET:
+            self._mempool_next_block_fee_range_max = mempool_next_block_fee_range_max
+        if ath_date is not _UNSET and ath_date and len(ath_date) > 0:
+            self._ath_date = dt_util.parse_datetime(ath_date)
+        if atl_date is not _UNSET and atl_date and len(atl_date) > 0:
+            self._atl_date = dt_util.parse_datetime(atl_date)
 
         self._update_child_sensors()
 
@@ -1380,7 +1453,23 @@ class CryptoinfoAdvSensor(SensorEntity):
         if self._fetch_failure_count >= self._max_fetch_failures:
             self._update_all_properties(available=False)
 
-    async def _async_update(self):
+    async def async_added_to_hass(self) -> None:
+        """Create and start the DataUpdateCoordinator once the entity is registered."""
+        await super().async_added_to_hass()
+        if self._is_child_sensor:
+            return
+        coordinator = CryptoinfoAdvCoordinator(self.hass, self)
+        self._coordinator = coordinator
+        self.async_on_remove(
+            coordinator.async_add_listener(self._handle_coordinator_update)
+        )
+        await coordinator.async_refresh()
+
+    def _handle_coordinator_update(self) -> None:
+        """Write state to HA after coordinator fetches new data."""
+        self.async_write_ha_state()
+
+    async def _async_fetch_data(self):
         api_data = None
 
         if not CryptoInfoAdvEntityManager.instance().should_fetch_entity(self):
@@ -1470,14 +1559,12 @@ class CryptoinfoAdvChildSensor(CryptoinfoAdvSensor):
     def attribute_key(self):
         return self._attribute_key
 
-    async def _async_update(self):
-        self._update()
-
     def _update(self):
         new_state = self._parent_sensor.get_child_data(self)
 
         if new_state is not None and new_state != self._state:
             self._update_all_properties(state=new_state)
-
         elif new_state is None:
             self._process_failed_fetch()
+
+        self.async_write_ha_state()

@@ -24,7 +24,7 @@ CONF_HALVING_WINDOW = "halving_window"
 CONF_MAX_FETCH_FAILURES = "max_fetch_failures"
 CONF_API_KEY = "api_key"
 
-SENSOR_PREFIX = "Cryptoinfo "
+SENSOR_PREFIX = "Cryptoinfo Advanced "
 ATTR_LAST_UPDATE = "last_update"
 ATTR_BASE_PRICE = "baseprice"
 ATTR_24H_VOLUME = "24h_volume"

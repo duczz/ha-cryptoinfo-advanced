@@ -1,0 +1,65 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Add Cryptoinfo Sensor",
+        "description": "Configure a new cryptocurrency sensor. A free CoinGecko API key is required for price sensors — register at https://www.coingecko.com/en/api",
+        "data": {
+          "api_mode": "API Mode",
+          "cryptocurrency_name": "Cryptocurrency",
+          "currency_name": "Currency",
+          "unit_of_measurement": "Unit of Measurement",
+          "update_frequency": "Update Frequency",
+          "api_key": "CoinGecko API Key (optional)"
+        },
+        "data_description": {
+          "cryptocurrency_name": "CoinGecko coin ID, e.g. bitcoin, ethereum, solana. Select from list or type custom value.",
+          "currency_name": "Conversion currency, e.g. eur, usd, btc. Select from list or type custom value.",
+          "api_key": "Required for price sensors since 2024. Register free at coingecko.com/en/api"
+        }
+      },
+      "advanced": {
+        "title": "Advanced Settings",
+        "data": {
+          "multiplier": "Multiplier",
+          "max_fetch_failures": "Max Fetch Failures before unavailable",
+          "extra_sensors": "Extra Sensors (additional entities)",
+          "api_domain_name": "API Domain Name (NOMP pool host)",
+          "pool_name": "Pool Name (NOMP)",
+          "diff_multiplier": "Difficulty Multiplier",
+          "block_time_minutes": "Block Time (minutes)",
+          "difficulty_window": "Difficulty Window (blocks)",
+          "halving_window": "Halving Window (blocks)",
+          "pool_prefix": "Pool Prefix (comma-separated)",
+          "fetch_args_template": "Fetch Args"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Edit Sensor Settings",
+        "data": {
+          "api_mode": "API Mode",
+          "cryptocurrency_name": "Cryptocurrency",
+          "currency_name": "Currency",
+          "unit_of_measurement": "Unit of Measurement",
+          "update_frequency": "Update Frequency (minutes)",
+          "api_key": "CoinGecko API Key (optional)",
+          "multiplier": "Multiplier",
+          "max_fetch_failures": "Max Fetch Failures before unavailable",
+          "extra_sensors": "Extra Sensors (additional entities)",
+          "api_domain_name": "API Domain Name (NOMP pool host)",
+          "pool_name": "Pool Name (NOMP)",
+          "diff_multiplier": "Difficulty Multiplier",
+          "block_time_minutes": "Block Time (minutes)",
+          "difficulty_window": "Difficulty Window (blocks)",
+          "halving_window": "Halving Window (blocks)",
+          "pool_prefix": "Pool Prefix (comma-separated)",
+          "fetch_args_template": "Fetch Args"
+        }
+      }
+    }
+  }
+}

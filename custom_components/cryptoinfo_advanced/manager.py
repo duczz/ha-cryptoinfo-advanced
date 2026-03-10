@@ -1,4 +1,4 @@
-import time
+from homeassistant.util import dt as dt_util
 
 from .const.const import (
     PROPERTY_POOL_CONTROL_REMAINING,
@@ -233,7 +233,7 @@ class CryptoInfoAdvEntityManager:
 
     def get_fetch_frequency(self, fetch_type):
         tdelta = self._fetch_frequency.get(fetch_type)
-        return tdelta.seconds if tdelta else 0
+        return int(tdelta.total_seconds()) if tdelta else 0
 
     def get_remaining_hash_control(self, cryptocurrency_name):
         if cryptocurrency_name not in self._hash_control_sources:
@@ -314,7 +314,7 @@ class CryptoInfoAdvEntityManager:
             return True
 
         last_fetch = self.get_last_fetch(entity_data_key)
-        if last_fetch + self.get_fetch_frequency(entity_data_key) < int(time.time()):
+        if last_fetch + self.get_fetch_frequency(entity_data_key) < int(dt_util.utcnow().timestamp()):
             return True
 
         return False
@@ -332,7 +332,7 @@ class CryptoInfoAdvEntityManager:
         entity_data_key = self.get_entity_data_key(entity)
 
         self._api_data[entity_data_key] = data
-        self._last_fetch[entity_data_key] = int(time.time())
+        self._last_fetch[entity_data_key] = int(dt_util.utcnow().timestamp())
 
     def fetch_cached_entity_data(self, entity):
         entity_data_key = self.get_entity_data_key(entity)
