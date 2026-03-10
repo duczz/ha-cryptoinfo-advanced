@@ -1,5 +1,5 @@
 ## Cryptoinfo Advanced — Cryptocurrency Home Assistant Integration
-This is a Fork from https://github.com/TheHolyRoger/hass-cryptoinfo, original is from https://github.com/heyajohnny/cryptoinfo
+This is a Fork from https://github.com/TheHolyRoger/hass-cryptoinfo & https://github.com/heyajohnny/cryptoinfo
 
 [![HA Version](https://img.shields.io/badge/HA%20Minimum-2024.1.0-blue)](https://www.home-assistant.io)
 [![hacs_badge](https://img.shields.io/badge/HACS-Default-orange.svg)](https://github.com/hacs/integration)
