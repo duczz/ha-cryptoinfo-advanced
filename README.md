@@ -1,11 +1,12 @@
-## Cryptoinfo Advanced — Cryptocurrency Home Assistant Sensor Component
+## Cryptoinfo Advanced — Cryptocurrency Home Assistant Integration
 [![hacs_badge](https://img.shields.io/badge/HACS-Default-orange.svg)](https://github.com/hacs/integration)
 
-### Powered by CoinGecko, CryptoID and Mempool.space APIs
+### An all-in-one data center for Crypto and Blockchain enthusiasts.
+Powered by trustworthy APIs from **CoinGecko**, **CryptoID**, and **Mempool.space**.
 
-Provides Home Assistant sensors for cryptocurrencies and blockchain data across multiple APIs.
+Add comprehensive cryptocurrency prices, blockchain statistics, mining pool hashrates, and real-time Mempool data directly into your Home Assistant dashboards. Create powerful automations based on market movements or network congestion!
 
-If you like this project, please consider supporting it:
+If you like this project, please consider supporting the development:
 
 <a href="https://www.buymeacoffee.com/TheHoliestRoger" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me an Aubergine" style="height: 60px !important;width: 217px !important;"></a>
 
@@ -14,73 +15,110 @@ If you like this project, please consider supporting it:
   bc1qpq4djuxgxsk0zrkg9y2rye8fyz7e0mjx64gzq0
 </details>
 
-Originally started from [Cryptoinfo](https://github.com/heyajohnny/cryptoinfo), significantly extended with additional features.
+*Originally started from [Cryptoinfo](https://github.com/heyajohnny/cryptoinfo), now significantly extended and completely rewritten with advanced features.*
 
 **Minimum Home Assistant version: 2024.1.0**
 
 ---
 
-## Installation
+## 🛠️ Installation & Setup
 
-### Step 1 — Add the integration
+### Step 1: Install the Integration
 
-**Option A — HACS (recommended):**
-Download *Cryptoinfo Advanced* from the HACS store.
+**Option A — HACS (Recommended):**
+1. Go to **HACS** in your Home Assistant.
+2. Click on **Integrations** → **Explore & Download Repositories**.
+3. Search for *Cryptoinfo Advanced* and download it.
+4. Restart Home Assistant.
 
-**Option B — Manual:**
-Copy the `custom_components/cryptoinfo_advanced/` folder into your HA config directory.
+**Option B — Manual Installation:**
+Copy the `custom_components/cryptoinfo_advanced/` folder from this repository into your Home Assistant `config/custom_components/` directory and restart.
 
-### Step 2 — Add a sensor via UI
+### Step 2: Add your first Sensor
 
-Go to **Settings → Devices & Services → Add Integration** and search for *Cryptoinfo Advanced*.
+The integration works by adding individual sensors one by one. This gives you complete control over what data you fetch and how often.
 
-Each sensor is its own integration entry. The setup wizard has two steps:
+1. Go to **Settings → Devices & Services → Add Integration**.
+2. Search for **Cryptoinfo Advanced**.
+3. Choose the **API Mode** (e.g. `price_main` for full price data, or `mempool_fees` for Bitcoin transaction fees).
+4. Fill out the relevant details (Coin name, Currency, etc.) and click **Submit**.
+5. *Optional:* The next screen lets you dive into **Advanced Settings**. Here you can extract attributes into their own separate entities using the **Extra Sensors** dropdown.
 
-**Step 1 — Core parameters:**
-- **API Mode** — choose the data source (e.g. `price_main`, `mempool_fees`)
-- **Cryptocurrency** — coin name or symbol (e.g. `bitcoin`, `btc`)
-- **Currency** — conversion currency (e.g. `eur`, `usd`)
-- **Unit of Measurement** — displayed unit (e.g. `€`, `$`, `sat/vB`)
-- **Update Frequency** — polling interval in minutes (default: 60)
-- **CoinGecko API Key** — optional, required for price sensors
-
-**Step 2 — Advanced settings** (optional, mode-specific):
-- **Multiplier** — multiply the state value (default: `1`)
-- **Max Fetch Failures** — failures before unavailable (default: `3`)
-- **Extra Sensors** — select which attributes to expose as separate entities
-- Additional parameters depending on the chosen API mode (pool name, difficulty window, etc.)
-
-To add more sensors, click **Add Integration** again — each sensor is a separate entry.
-
-To edit an existing sensor, click **Configure** on the entry in the integration list.
-
-> **Note:** A free CoinGecko API key is required since 2024 for price sensors. Register at [coingecko.com](https://www.coingecko.com/en/api) and use the Demo key.
+To add more sensors (e.g., Ethereum price, Bitcoin Mempool size), simply click **Add Integration** again and repeat the process!
 
 ---
 
-## CoinGecko API Key
+## 🔑 Important: CoinGecko API Key (For Price Sensors)
 
-CoinGecko requires a free API key for all requests since 2024. Without a key, price sensors will return HTTP 429 errors.
+If you want to track **Prices or Dominance** using CoinGecko (Modes: `price_main`, `price_simple`, `dominance`), you must provide a free API key. Without it, you will get "HTTP 429 Too Many Requests" errors.
 
-Enter the key in the **API Key** field when adding or editing a price sensor via the UI.
+1. Go to [CoinGecko API](https://www.coingecko.com/en/api) and create a free account.
+2. Generate a "Demo API Key".
+3. Enter this key in the **API Key** field when setting up your sensor in Home Assistant.
 
-**Supported sensor types:** `price_main`, `price_simple`, `dominance`
-
-For available `cryptocurrency_name` values: https://api.coingecko.com/api/v3/coins/list
-For available `currency_name` values: https://api.coingecko.com/api/v3/simple/supported_vs_currencies
-
----
-
-## Services (Functions)
-
-The integration provides the following Home Assistant services:
-
-### `cryptoinfo_advanced.reload`
-Reloads all `cryptoinfo_advanced` sensor entities and their configurations without requiring a full Home Assistant restart. This is useful when you have modified configurations or want to forcefully re-initialize the integration.
+*Note: You only need the API key for CoinGecko. Other sources (CryptoID, Mempool, NOMP) do not require keys.*
 
 ---
 
-## Common Sensor Parameters
+## 📊 Available API Modes (Data Sources)
+
+When creating a new sensor, you must choose an **API Mode**. This determines what kind of data the sensor will fetch.
+
+### 💰 1. Cryptocurrency Prices (CoinGecko)
+*Requires a free CoinGecko API key.*
+
+- **`price_main` - Full Price Data & Market Overview**
+  Provides the current price and a massive list of attributes: 24h volume, 1h/24h/7d/30d changes, Market Cap, Circulating Supply, All-Time Highs/Lows, and more.
+- **`price_simple` - Lightweight Price Data**
+  A simplified version containing only the most basic price and 24h data. Useful if you want to track hundreds of coins without overloading Home Assistant.
+- **`dominance` - Market Dominance**
+  Tracks the percentage of total crypto market cap that belongs to a specific coin (usually Bitcoin).
+
+### 🔗 2. Blockchain & Mining Data (CryptoID & NOMP)
+
+- **`chain_summary` - Network Overview**
+  Tracks the current Block Height, Network Hashrate, and Mining Difficulty.
+- **`chain_control` - Pool Dominance Tracker**
+  Tracks how many blocks a specific mining pool (e.g., Foundry, AntPool) mined in the last 100 or 1000 blocks.
+- **`chain_orphans` - Network Health**
+  Tracks how many orphaned blocks occurred in the last 24 hours.
+- **`chain_block_time` - Block Timestamp**
+  Returns the exact date/time a specific block was mined.
+- **`nomp_pool_stats` - Custom NOMP Mining Pools**
+  Track the hashrate, pending blocks, and connected workers of any standard NOMP-based mining pool.
+
+### ⚡ 3. Bitcoin Mempool & Fees (Mempool.space)
+*These modes are strictly for Bitcoin (`btc`).*
+
+- **`mempool_fees` - Recommended Transaction Fees**
+  Provides the current recommended `sat/vB` fees. Exposes attributes for Fastest, 30-min, 60-min, Economy, and Minimum fees. Great for automations that alert you when network fees are low!
+- **`mempool_stats` - Mempool Status**
+  Tracks the total size of the unconfirmed Mempool (in vBytes) and the total number of unconfirmed transactions.
+- **`mempool_next_block` - Next Block Projections**
+  Estimates the size and total fees of the very next block to be mined.
+
+---
+
+## ⚙️ Advanced Features
+
+### 🧩 "Extra Sensors" (Extracting Attributes)
+Many sensors download a lot of data grouped into "Attributes" (e.g., a `price_main` sensor has the price as its main state, but hides 24h volume, ATH, and 7d changes inside its attributes).
+
+During setup (or by clicking **Configure** on an existing sensor), you can use the **Extra Sensors** dropdown. This allows you to select any of those hidden attributes and instantly turn them into their own standalone Home Assistant entities! 
+
+*Example: You can extract `all_time_high_distance` to easily display how far Bitcoin is from its ATH on your dashboard.*
+
+### 🔄 Multipliers & Units
+- **Multiplier:** You can use this to tweak values. For example, if you hold `0.5` Bitcoin, set the multiplier to `0.5` — the sensor will now directly show the value of *your* holdings instead of the price of 1 full Bitcoin.
+- **Unit of Measurement:** You define what unit to show in the UI (`$`, `€`, `sat/vB`, `EH/s`).
+
+### 🛠️ Reload Service
+If you ever need to forcefully restart the integration without rebooting Home Assistant:
+Go to **Developer Tools → Services** and call `cryptoinfo_advanced.reload`. This cleanly restarts all your sensors.
+
+---
+
+## 📝 Common Sensor Parameters
 
 All sensors share the following parameters (configured via the UI setup wizard):
 
@@ -98,35 +136,17 @@ All sensors share the following parameters (configured via the UI setup wizard):
 
 ---
 
-## API Modes
-
-| Mode | Source | Description |
-| --- | --- | --- |
-| `price_main` | CoinGecko | Full price data with extended attributes. |
-| `price_simple` | CoinGecko | Lightweight price data. |
-| `dominance` | CoinGecko | Market dominance percentage. |
-| `chain_summary` | CryptoID | Blockchain summary: block height, hashrate, difficulty. |
-| `chain_control` | CryptoID | Mining pool hashrate control. |
-| `chain_orphans` | CryptoID | Orphaned blocks in the past 24 hours. |
-| `chain_block_time` | CryptoID | Unix timestamp of a specific block height. |
-| `nomp_pool_stats` | NOMP | Pool stats from any NOMP-based mining pool. |
-| `mempool_stats` | Mempool.space | Mempool size and fee data (Bitcoin only). |
-| `mempool_fees` | Mempool.space | Recommended fee rates (Bitcoin only). |
-| `mempool_next_block` | Mempool.space | Projected next block data (Bitcoin only). |
-
----
-
-## Sensor Reference
+## 📖 Detailed Sensor Reference
 
 ### Price (Main) — `price_main`
 
-**State:** `baseprice × multiplier`
+**State:** `base_price × multiplier`
 
 #### Attributes
 
 | Attribute | Description |
 | --- | --- |
-| `baseprice` | Price of 1 coin in `currency_name`. |
+| `base_price` | Price of 1 coin in `currency_name`. |
 | `24h_volume` | 24-hour trading volume. |
 | `1h_change` | 1-hour price change in %. |
 | `24h_change` | 24-hour price change in %. |
@@ -156,13 +176,13 @@ All sensors share the following parameters (configured via the UI setup wizard):
 
 ### Price (Simple) — `price_simple`
 
-**State:** `baseprice × multiplier`
+**State:** `base_price × multiplier`
 
 #### Attributes
 
 | Attribute | Description |
 | --- | --- |
-| `baseprice` | Price of 1 coin in `currency_name`. |
+| `base_price` | Price of 1 coin in `currency_name`. |
 | `24h_volume` | 24-hour trading volume. |
 | `24h_change` | 24-hour price change in %. |
 | `market_cap` | Total market cap in `currency_name`. |
@@ -364,7 +384,21 @@ All sensors share the following parameters (configured via the UI setup wizard):
 
 ---
 
-## Issues and Feature Requests
+## ❓ Troubleshooting & Finding Coin Names
 
-Please report bugs or request features at:
-https://github.com/TheHolyRoger/hass-cryptoinfo/issues
+**"My CoinGecko sensor is Unavailable/Unknown!"**
+Make sure you are using the correct `cryptocurrency_name` and `currency_name`.
+- List of valid Coins: [CoinGecko Coin List](https://api.coingecko.com/api/v3/coins/list) (use the `id` field, e.g., `bitcoin`, `ethereum`, `shiba-inu`).
+- List of valid Currencies: [Supported vs_currencies](https://api.coingecko.com/api/v3/simple/supported_vs_currencies) (e.g., `usd`, `eur`, `btc`).
+- Ensure you have entered a valid Demo API Key.
+
+**"My Mempool sensors aren't working!"**
+Make sure you typed `bitcoin` or `btc` in the Cryptocurrency field. Mempool sensors only work for the Bitcoin network.
+
+---
+
+## 💡 Issues, Ideas & Feature Requests
+
+Encountered a bug? Have an idea for a cool new API source?
+Please open an issue on the GitHub repository:
+[https://github.com/TheHolyRoger/hass-cryptoinfo/issues](https://github.com/TheHolyRoger/hass-cryptoinfo/issues)
