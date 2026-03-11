@@ -118,7 +118,7 @@ During setup (or by clicking **Configure** on an existing sensor), you can use t
 
 ### ⏱️ Rate Limit Handling (CoinGecko)
 
-The integration includes built-in protection against CoinGecko's API rate limits:
+The integration includes built-in protection against CoinGecko's API rate limits (Public API: 5–15 calls/min depending on worldwide usage; Demo API key: ~30 calls/min):
 
 **Shared API calls:** Multiple sensors tracking the same coin and currency (e.g. two sensors for `bitcoin` / `eur` with different multipliers) share a single API call. The result is cached and reused — no duplicate requests.
 
