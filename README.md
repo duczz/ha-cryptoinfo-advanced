@@ -54,10 +54,10 @@ If you want to track **Prices or Dominance** using CoinGecko (Modes: `price_main
 
 **Without a key:** CoinGecko's public API allows only 5–15 requests per minute. The integration handles this gracefully (see Rate Limit Handling below), but with many sensors you may occasionally see delayed updates.
 
-**With a free Demo key:** The rate limit increases to ~30 requests per minute, which is sufficient for most setups.
+**With a free API key:** The rate limit increases to ~30 requests per minute, which is sufficient for most setups.
 
 1. Go to [CoinGecko API](https://www.coingecko.com/en/api) and create a free account.
-2. Generate a **Demo API Key**.
+2. Generate a **API Key**.
 3. Enter this key in the **API Key** field when setting up your sensor in Home Assistant.
 
 *Note: You only need the API key for CoinGecko. Other sources (CryptoID, Mempool, NOMP) do not require keys.*
@@ -118,7 +118,7 @@ During setup (or by clicking **Configure** on an existing sensor), you can use t
 
 ### ⏱️ Rate Limit Handling (CoinGecko)
 
-The integration includes built-in protection against CoinGecko's API rate limits (Public API: 5–15 calls/min depending on worldwide usage; Demo API key: ~30 calls/min):
+The integration includes built-in protection against CoinGecko's API rate limits (Public API: 5–15 calls/min depending on worldwide usage; API key: ~30 calls/min):
 
 **Shared API calls:** Multiple sensors tracking the same coin and currency (e.g. two sensors for `bitcoin` / `eur` with different multipliers) share a single API call. The result is cached and reused — no duplicate requests.
 
@@ -420,7 +420,7 @@ All sensors share the following parameters (configured via the UI setup wizard):
 Make sure you are using the correct `cryptocurrency_name` and `currency_name`.
 - List of valid Coins: [CoinGecko Coin List](https://api.coingecko.com/api/v3/coins/list) (use the `id` field, e.g., `bitcoin`, `ethereum`, `shiba-inu`).
 - List of valid Currencies: [Supported vs_currencies](https://api.coingecko.com/api/v3/simple/supported_vs_currencies) (e.g., `usd`, `eur`, `btc`).
-- Ensure you have entered a valid Demo API Key.
+- Ensure you have entered a valid API Key.
 
 **"My Mempool sensors aren't working!"**
 Make sure you typed `bitcoin` or `btc` in the Cryptocurrency field. Mempool sensors only work for the Bitcoin network.
