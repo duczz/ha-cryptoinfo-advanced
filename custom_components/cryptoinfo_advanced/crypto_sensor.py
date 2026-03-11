@@ -1479,12 +1479,7 @@ class CryptoinfoAdvSensor(SensorEntity):
         self.async_on_remove(
             coordinator.async_add_listener(self._handle_coordinator_update)
         )
-        startup_delay = CryptoInfoAdvEntityManager.instance().get_next_startup_delay()
-        async_call_later(
-            self.hass,
-            startup_delay,
-            callback(lambda _: self.hass.async_create_task(coordinator.async_refresh())),
-        )
+        self.hass.async_create_task(coordinator.async_refresh())
 
     def _schedule_retry_if_rate_limited(self):
         domain = urlparse(API_BASE_URL_COINGECKO).netloc

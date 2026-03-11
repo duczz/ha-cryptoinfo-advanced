@@ -96,7 +96,6 @@ class CryptoInfoAdvEntityManager:
         self._last_diff_sources = dict()
         self._hash_control_sources = dict()
         self._rate_limited_until = dict()
-        self._startup_sensor_count = 0
 
     @property
     def fetch_types(self):
@@ -362,7 +361,3 @@ class CryptoInfoAdvEntityManager:
             return 0
         return max(0, until - int(dt_util.utcnow().timestamp()))
 
-    def get_next_startup_delay(self):
-        delay = self._startup_sensor_count * 2
-        self._startup_sensor_count += 1
-        return delay

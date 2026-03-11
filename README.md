@@ -120,8 +120,6 @@ During setup (or by clicking **Configure** on an existing sensor), you can use t
 
 The integration includes built-in protection against CoinGecko's API rate limits:
 
-**Startup staggering:** When Home Assistant starts, sensors do not all query the API at the same time. Instead, each sensor waits an additional 2 seconds before its first fetch (Sensor 1 = 0s, Sensor 2 = 2s, Sensor 3 = 4s, …). This spreads the initial burst over time and prevents hitting the rate limit on startup.
-
 **Shared API calls:** Multiple sensors tracking the same coin and currency (e.g. two sensors for `bitcoin` / `eur` with different multipliers) share a single API call. The result is cached and reused — no duplicate requests.
 
 **Automatic backoff on HTTP 429:** If CoinGecko returns a rate limit error, all sensors automatically pause their requests to that domain for 60 seconds (or the duration specified in the `Retry-After` response header). Sensors that were blocked during this cooldown automatically schedule up to 3 retries once the cooldown expires — so no manual intervention is needed.
@@ -131,16 +129,16 @@ The integration includes built-in protection against CoinGecko's API rate limits
 | Time | Sensor | Action | Result |
 |------|--------|--------|--------|
 | t=0s | Bitcoin/EUR | First fetch | ✅ Data received |
-| t=2s | BTC Dominance | First fetch | ✅ Data received |
-| t=4s | Ethereum/EUR | First fetch | ✅ Data received |
-| t=6s | Fetch-AI/EUR | First fetch | ❌ HTTP 429 → domain blocked 60s, Retry #1 scheduled in 61s |
-| t=8s | Solana/EUR | Domain blocked | ⏳ Skipped → Retry #1 scheduled in 59s |
-| t=10s | Sui/EUR | Domain blocked | ⏳ Skipped → Retry #1 scheduled in 57s |
-| t=67s | Fetch-AI/EUR | Retry #1 | ✅ Data received |
-| t=67s | Solana/EUR | Retry #1 | ✅ Data received |
-| t=67s | Sui/EUR | Retry #1 | ✅ Data received |
+| t=0s | BTC Dominance | First fetch | ✅ Data received |
+| t=0s | Ethereum/EUR | First fetch | ✅ Data received |
+| t=0s | Fetch-AI/EUR | First fetch | ❌ HTTP 429 → domain blocked 60s, Retry #1 scheduled in 61s |
+| t=0s | Solana/EUR | Domain blocked | ⏳ Skipped → Retry #1 scheduled in 61s |
+| t=0s | Sui/EUR | Domain blocked | ⏳ Skipped → Retry #1 scheduled in 61s |
+| t=61s | Fetch-AI/EUR | Retry #1 | ✅ Data received |
+| t=61s | Solana/EUR | Retry #1 | ✅ Data received |
+| t=61s | Sui/EUR | Retry #1 | ✅ Data received |
 
-→ **All sensors have data within ~67 seconds**, even without an API key.
+→ **All sensors have data within ~61 seconds**, even without an API key.
 
 If retries also hit a 429, the process repeats up to 3 times total. After that, the normal update interval takes over.
 
