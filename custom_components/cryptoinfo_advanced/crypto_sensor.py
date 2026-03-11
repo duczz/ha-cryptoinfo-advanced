@@ -8,6 +8,7 @@ import aiohttp
 import asyncio
 import traceback
 from datetime import datetime, timedelta, timezone
+from urllib.parse import urlparse
 
 from .const.const import (
     _LOGGER,
@@ -115,8 +116,10 @@ from homeassistant.const import (
     CONF_UNIQUE_ID,
     CONF_UNIT_OF_MEASUREMENT,
 )
+from homeassistant.core import callback
 from homeassistant.exceptions import TemplateError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.event import async_call_later
 from homeassistant.helpers.template import Template
 from homeassistant.util import dt as dt_util
 
@@ -179,6 +182,7 @@ class CryptoinfoAdvSensor(SensorEntity):
         self._child_sensors = list()
         self._child_sensor_config = extra_sensors
         self._fetch_failure_count = 0
+        self._rate_limit_retry_count = 0
         self._api_key = api_key
 
         # HASS Attributes
@@ -778,6 +782,10 @@ class CryptoinfoAdvSensor(SensorEntity):
     async def _async_api_fetch(self, api_data, url, extract_data, extract_primary, encoding="utf-8"):
         try:
             if api_data is None:
+                domain = urlparse(url).netloc
+                if CryptoInfoAdvEntityManager.instance().is_domain_rate_limited(domain):
+                    _LOGGER.debug("Skipping fetch for %s: %s is rate limited", self.name, domain)
+                    return None, None
                 async with asyncio.timeout(30):
                     headers = {}
                     if self._api_key and API_BASE_URL_COINGECKO in url:
@@ -785,6 +793,14 @@ class CryptoinfoAdvSensor(SensorEntity):
                     response = await self._session.get(url, headers=headers)
                     if response.status == 200:
                         api_data = extract_data(await response.json(encoding=encoding, content_type=None))
+                    elif response.status == 429:
+                        retry_after = int(response.headers.get("Retry-After", 60))
+                        CryptoInfoAdvEntityManager.instance().set_domain_rate_limited(domain, retry_after)
+                        _LOGGER.debug(
+                            "HTTP 429 rate limit exceeded fetching update for %s – pausing %ss (url: %s)",
+                            self.name, retry_after, url,
+                        )
+                        return None, None
                     else:
                         _LOGGER.warning(
                             "HTTP %s fetching update for %s (url: %s)",
@@ -1463,7 +1479,23 @@ class CryptoinfoAdvSensor(SensorEntity):
         self.async_on_remove(
             coordinator.async_add_listener(self._handle_coordinator_update)
         )
-        await coordinator.async_refresh()
+        startup_delay = CryptoInfoAdvEntityManager.instance().get_next_startup_delay()
+        async_call_later(
+            self.hass,
+            startup_delay,
+            callback(lambda _: self.hass.async_create_task(coordinator.async_refresh())),
+        )
+
+    def _schedule_retry_if_rate_limited(self):
+        domain = urlparse(API_BASE_URL_COINGECKO).netloc
+        remaining = CryptoInfoAdvEntityManager.instance().get_rate_limit_remaining(domain)
+        if remaining > 0 and self._coordinator and self._rate_limit_retry_count < 3:
+            self._rate_limit_retry_count += 1
+            async_call_later(
+                self.hass,
+                remaining + 1,
+                callback(lambda _: self.hass.async_create_task(self._coordinator.async_refresh())),
+            )
 
     def _handle_coordinator_update(self) -> None:
         """Write state to HA after coordinator fetches new data."""
@@ -1512,11 +1544,15 @@ class CryptoinfoAdvSensor(SensorEntity):
                     api_data = await self._fetch_price_data_alternate(api_data)
                 except ValueError:
                     self._process_failed_fetch()
+                    self._schedule_retry_if_rate_limited()
                     return
+                return  # Fallback-Daten nicht im Shared-Cache speichern
             else:
                 self._process_failed_fetch()
+                self._schedule_retry_if_rate_limited()
                 return
 
+        self._rate_limit_retry_count = 0
         CryptoInfoAdvEntityManager.instance().set_cached_entity_data(self, api_data)
 
 

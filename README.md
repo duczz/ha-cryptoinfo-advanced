@@ -48,12 +48,16 @@ To add more sensors (e.g., Ethereum price, Bitcoin Mempool size), simply click *
 
 ---
 
-## 🔑 Important: CoinGecko API Key (For Price Sensors)
+## 🔑 CoinGecko API Key (Recommended for Price Sensors)
 
-If you want to track **Prices or Dominance** using CoinGecko (Modes: `price_main`, `price_simple`, `dominance`), you must provide a free API key. Without it, you will get "HTTP 429 Too Many Requests" errors.
+If you want to track **Prices or Dominance** using CoinGecko (Modes: `price_main`, `price_simple`, `dominance`), it is **strongly recommended** to use a free API key.
+
+**Without a key:** CoinGecko's public API allows only 5–15 requests per minute. The integration handles this gracefully (see Rate Limit Handling below), but with many sensors you may occasionally see delayed updates.
+
+**With a free Demo key:** The rate limit increases to ~30 requests per minute, which is sufficient for most setups.
 
 1. Go to [CoinGecko API](https://www.coingecko.com/en/api) and create a free account.
-2. Generate a "Demo API Key".
+2. Generate a **Demo API Key**.
 3. Enter this key in the **API Key** field when setting up your sensor in Home Assistant.
 
 *Note: You only need the API key for CoinGecko. Other sources (CryptoID, Mempool, NOMP) do not require keys.*
@@ -111,6 +115,34 @@ During setup (or by clicking **Configure** on an existing sensor), you can use t
 ### 🔄 Multipliers & Units
 - **Multiplier:** You can use this to tweak values. For example, if you hold `0.5` Bitcoin, set the multiplier to `0.5` — the sensor will now directly show the value of *your* holdings instead of the price of 1 full Bitcoin.
 - **Unit of Measurement:** You define what unit to show in the UI (`$`, `€`, `sat/vB`, `EH/s`).
+
+### ⏱️ Rate Limit Handling (CoinGecko)
+
+The integration includes built-in protection against CoinGecko's API rate limits:
+
+**Startup staggering:** When Home Assistant starts, sensors do not all query the API at the same time. Instead, each sensor waits an additional 2 seconds before its first fetch (Sensor 1 = 0s, Sensor 2 = 2s, Sensor 3 = 4s, …). This spreads the initial burst over time and prevents hitting the rate limit on startup.
+
+**Shared API calls:** Multiple sensors tracking the same coin and currency (e.g. two sensors for `bitcoin` / `eur` with different multipliers) share a single API call. The result is cached and reused — no duplicate requests.
+
+**Automatic backoff on HTTP 429:** If CoinGecko returns a rate limit error, all sensors automatically pause their requests to that domain for 60 seconds (or the duration specified in the `Retry-After` response header). Sensors that were blocked during this cooldown automatically schedule up to 3 retries once the cooldown expires — so no manual intervention is needed.
+
+#### Example: 6 sensors at startup (no API key)
+
+| Time | Sensor | Action | Result |
+|------|--------|--------|--------|
+| t=0s | Bitcoin/EUR | First fetch | ✅ Data received |
+| t=2s | BTC Dominance | First fetch | ✅ Data received |
+| t=4s | Ethereum/EUR | First fetch | ✅ Data received |
+| t=6s | Fetch-AI/EUR | First fetch | ❌ HTTP 429 → domain blocked 60s, Retry #1 scheduled in 61s |
+| t=8s | Solana/EUR | Domain blocked | ⏳ Skipped → Retry #1 scheduled in 59s |
+| t=10s | Sui/EUR | Domain blocked | ⏳ Skipped → Retry #1 scheduled in 57s |
+| t=67s | Fetch-AI/EUR | Retry #1 | ✅ Data received |
+| t=67s | Solana/EUR | Retry #1 | ✅ Data received |
+| t=67s | Sui/EUR | Retry #1 | ✅ Data received |
+
+→ **All sensors have data within ~67 seconds**, even without an API key.
+
+If retries also hit a 429, the process repeats up to 3 times total. After that, the normal update interval takes over.
 
 ### 🛠️ Reload Service
 If you ever need to forcefully restart the integration without rebooting Home Assistant:

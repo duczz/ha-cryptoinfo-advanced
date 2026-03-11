@@ -95,6 +95,8 @@ class CryptoInfoAdvEntityManager:
         self._block_time_sources = dict()
         self._last_diff_sources = dict()
         self._hash_control_sources = dict()
+        self._rate_limited_until = dict()
+        self._startup_sensor_count = 0
 
     @property
     def fetch_types(self):
@@ -157,6 +159,8 @@ class CryptoInfoAdvEntityManager:
     @property
     def fetch_shared_types(self):
         return [
+            CryptoInfoAdvDataFetchType.PRICE_MAIN,
+            CryptoInfoAdvDataFetchType.PRICE_SIMPLE,
             CryptoInfoAdvDataFetchType.DOMINANCE,
             CryptoInfoAdvDataFetchType.CHAIN_SUMMARY,
             CryptoInfoAdvDataFetchType.CHAIN_CONTROL,
@@ -320,7 +324,12 @@ class CryptoInfoAdvEntityManager:
         return False
 
     def get_entity_data_key(self, entity):
-        if entity.fetch_type == CryptoInfoAdvDataFetchType.CHAIN_CONTROL:
+        if entity.fetch_type in (
+            CryptoInfoAdvDataFetchType.PRICE_MAIN,
+            CryptoInfoAdvDataFetchType.PRICE_SIMPLE,
+        ):
+            return f"{entity.fetch_type}_{entity.cryptocurrency_name}_{entity.currency_name}"
+        elif entity.fetch_type == CryptoInfoAdvDataFetchType.CHAIN_CONTROL:
             return f"{entity.fetch_type}_{entity.cryptocurrency_name}"
         else:
             return f"{entity.fetch_type}"
@@ -337,3 +346,23 @@ class CryptoInfoAdvEntityManager:
     def fetch_cached_entity_data(self, entity):
         entity_data_key = self.get_entity_data_key(entity)
         return self._api_data[entity_data_key]
+
+    def set_domain_rate_limited(self, domain, cooldown_seconds):
+        self._rate_limited_until[domain] = int(dt_util.utcnow().timestamp()) + cooldown_seconds
+
+    def is_domain_rate_limited(self, domain):
+        until = self._rate_limited_until.get(domain)
+        if until is None:
+            return False
+        return int(dt_util.utcnow().timestamp()) < until
+
+    def get_rate_limit_remaining(self, domain):
+        until = self._rate_limited_until.get(domain)
+        if until is None:
+            return 0
+        return max(0, until - int(dt_util.utcnow().timestamp()))
+
+    def get_next_startup_delay(self):
+        delay = self._startup_sensor_count * 2
+        self._startup_sensor_count += 1
+        return delay
