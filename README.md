@@ -13,8 +13,8 @@ Add comprehensive cryptocurrency prices, blockchain statistics, mining pool hash
 
 ## Support me ☕
 
-Wenn dir diese Integration gefällt und du meine Arbeit unterstützen möchtest, freue ich mich über eine kleine Spende. <br>
-Vielen Dank für deine Unterstützung! ❤️
+If you like this integration and would like to support my work, I would appreciate a small donation. <br>
+Thank you very much for your support! ❤️
 
 <a href="https://www.paypal.com/donate/?hosted_button_id=GBCCKFTK5FVX4">
   <img src="https://github.com/duczz/ha-cryptoinfo-advanced/blob/master/paypal_donation_logo.png?raw=true" width="230" alt="Donate with PayPal">
