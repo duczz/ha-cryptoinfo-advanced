@@ -1,8 +1,8 @@
-## Cryptoinfo Advanced — Cryptocurrency Home Assistant Integration
-This is a Fork from https://github.com/TheHolyRoger/hass-cryptoinfo & https://github.com/heyajohnny/cryptoinfo
-
 [![HA Version](https://img.shields.io/badge/HA%20Minimum-2024.1.0-blue)](https://www.home-assistant.io)
 [![hacs_badge](https://img.shields.io/badge/HACS-Default-orange.svg)](https://github.com/hacs/integration)
+
+## Cryptoinfo Advanced — Cryptocurrency Home Assistant Integration
+This is a Fork from https://github.com/TheHolyRoger/hass-cryptoinfo & https://github.com/heyajohnny/cryptoinfo
 
 ### An all-in-one data center for Crypto and Blockchain enthusiasts.
 Powered by trustworthy APIs from **CoinGecko**, **CryptoID**, and **Mempool.space**.
@@ -13,7 +13,8 @@ Add comprehensive cryptocurrency prices, blockchain statistics, mining pool hash
 
 ## Support me ☕
 
-Wenn dir diese Integration gefällt und du meine Arbeit unterstützen möchtest, freue ich mich über eine kleine Spende. Das hilft mir, die Hardware-Kosten zu decken und Zeit für die Weiterentwicklung zu finden. Vielen Dank für deine Unterstützung! ❤️
+Wenn dir diese Integration gefällt und du meine Arbeit unterstützen möchtest, freue ich mich über eine kleine Spende. <br>
+Vielen Dank für deine Unterstützung! ❤️
 
 <a href="https://www.paypal.com/donate/?hosted_button_id=GBCCKFTK5FVX4">
   <img src="https://github.com/duczz/ha-cryptoinfo-advanced/blob/master/paypal_donation_logo.png?raw=true" width="230" alt="Donate with PayPal">
