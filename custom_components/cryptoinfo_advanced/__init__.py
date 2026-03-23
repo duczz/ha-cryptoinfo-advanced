@@ -3,11 +3,14 @@
 
 __version__ = "0.4.0"
 
+import homeassistant.helpers.config_validation as cv
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
 from .const.const import DOMAIN, PLATFORMS
 from .manager import CryptoInfoAdvEntityManager
+
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 
 async def async_setup(hass: HomeAssistant, _config: dict) -> bool:

@@ -6,9 +6,9 @@
     "@heyajohnny",
     "@TheHolyRoger"
   ],
+  "config_flow": true,
   "dependencies": [],
   "documentation": "https://github.com/duczz/ha-cryptoinfo-advanced",
-  "config_flow": true,
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/duczz/ha-cryptoinfo-advanced/issues",
   "requirements": [],

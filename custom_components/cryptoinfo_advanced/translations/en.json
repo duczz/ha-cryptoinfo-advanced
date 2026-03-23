@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Add Cryptoinfo Sensor",
-        "description": "Configure a new cryptocurrency sensor. A free CoinGecko API key is required for price sensors — register at https://www.coingecko.com/en/api",
+        "description": "Configure a new cryptocurrency sensor. A free CoinGecko API key is strongly recommended for price sensors.",
         "data": {
           "api_mode": "API Mode",
           "cryptocurrency_name": "Cryptocurrency",
