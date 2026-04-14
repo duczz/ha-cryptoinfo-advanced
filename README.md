@@ -17,7 +17,7 @@ If you like this integration and would like to support my work, I would apprecia
 Thank you very much for your support! ❤️
 
 <a href="https://www.paypal.com/donate/?hosted_button_id=GBCCKFTK5FVX4">
-  <img src="https://github.com/duczz/ha-cryptoinfo-advanced/blob/master/paypal_donation_logo.png?raw=true" width="230" alt="Donate with PayPal">
+  <img src="https://github.com/duczz/ha-cryptoinfo-advanced/blob/master/.github/paypal_donation_logo.png?raw=true" width="230" alt="Donate with PayPal">
 </a>
 
 ---
